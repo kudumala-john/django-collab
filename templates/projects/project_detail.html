@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>{{ object.name }}</h2>
+<p>{{ object.description }}</p>
+
+<h3>Tasks</h3>
+<ul class="list-group mb-3">
+  {% for task in tasks %}
+    <li class="list-group-item">
+      <strong>{{ task.title }}</strong> - {{ task.get_status_display }}
+      {% if task.assigned_to %} ({{ task.assigned_to.username }}){% endif %}
+      <br>
+      <small>Due: {{ task.due_date|default:"No deadline" }}</small>
+      <div>
+        <a href="{% url 'task_update_status' task.id 'TODO' %}" class="btn btn-sm btn-outline-secondary">To-Do</a>
+        <a href="{% url 'task_update_status' task.id 'INPROG' %}" class="btn btn-sm btn-outline-primary">In-Progress</a>
+        <a href="{% url 'task_update_status' task.id 'DONE' %}" class="btn btn-sm btn-outline-success">Done</a>
+      </div>
+    </li>
+  {% empty %}
+    <li class="list-group-item">No tasks yet.</li>
+  {% endfor %}
+</ul>
+
+<h4>Add Task</h4>
+<form method="post" action="{% url 'task_create' object.id %}">
+  {% csrf_token %}
+  {{ task_form.as_p }}
+  <button type="submit" class="btn btn-primary">Add Task</button>
+</form>
+
+<hr>
+
+<h3>Chat</h3>
+<div id="chat-log" style="border:1px solid #ccc; height:200px; overflow-y:scroll; padding:5px; margin-bottom:10px;">
+  {% for msg in recent_messages %}
+    <p><strong>{{ msg.user.username }}</strong>: {{ msg.content }}</p>
+  {% endfor %}
+</div>
+
+<input id="chat-message-input" type="text" class="form-control" placeholder="Type a message">
+<button id="chat-message-submit" class="btn btn-success mt-2">Send</button>
+
+<script>
+  const projectId = "{{ object.id }}";
+  const chatSocket = new WebSocket(
+    "ws://" + window.location.host + "/ws/project/" + projectId + "/"
+  );
+
+  chatSocket.onmessage = function(e) {
+    const data = JSON.parse(e.data);
+    const chatLog = document.querySelector("#chat-log");
+    const p = document.createElement("p");
+    p.innerHTML = "<strong>" + data.user + "</strong>: " + data.message;
+    chatLog.appendChild(p);
+    chatLog.scrollTop = chatLog.scrollHeight;
+  };
+
+  document.querySelector("#chat-message-submit").onclick = function() {
+    const input = document.querySelector("#chat-message-input");
+    chatSocket.send(JSON.stringify({"message": input.value}));
+    input.value = "";
+  };
+</script>
+
+<a href="{% url 'project_list' %}" class="btn btn-secondary mt-3">Back to Projects</a>
+{% endblock %}

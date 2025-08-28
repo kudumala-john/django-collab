@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Your Projects</h2>
+
+<a href="{% url 'project_create' %}" class="btn btn-primary mb-3">+ New Project</a>
+
+<ul class="list-group">
+  {% for project in object_list %}
+    <li class="list-group-item">
+      <a href="{% url 'project_detail' project.pk %}">{{ project.name }}</a>
+    </li>
+  {% empty %}
+    <li class="list-group-item">No projects yet.</li>
+  {% endfor %}
+</ul>
+{% endblock %}
